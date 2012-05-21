@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011 Griffon Slick - Andres Almiray. All Rights Reserved.
+ * Copyright (c) 2010-2012 Griffon Slick - Andres Almiray. All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -31,12 +31,5 @@
 /**
  * @author Andres Almiray
  */
-
-// check to see if we already have a SlickGriffonAddon
-configText = '''root.'SlickGriffonAddon'.addon=true'''
-if(!(builderConfigFile.text.contains(configText))) {
-    println 'Adding SlickGriffonAddon to Builder.groovy'
-    builderConfigFile.text += '\n' + configText + '\n'
-}
 
 ant.mkdir(dir: "${basedir}/griffon-app/gamestates")

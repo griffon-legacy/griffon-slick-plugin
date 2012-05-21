@@ -1,0 +1,47 @@
+DESCRIPTION
+        slick:create-game-state
+
+    Creates a new GameState.
+
+SYNTAX
+        create-game-state [options] [name] 
+
+ARGUMENTS
+        name
+                The name of the game state to be created.
+
+OPTIONS
+        --archetype
+                Archetype to be searched for templates.
+                (defaults to default)
+        --controller
+                Specifies the Controller template to be used.
+                (defaults to Controller)
+        --file-type
+                Source file type.
+                (defaults to groovy)
+        --group
+                Specifies the common template to use on all GameState members.
+        --model
+                Specifies the Model template to be used.
+                (defaults to Model)
+        --non-interactive
+                Controls if the shell can ask for input or not.
+        --skip-controller
+                Skips the creation of the controller GameState member.
+        --skip-model
+                Skips the creation of the model GameState member.
+        --skip-package-prompt
+                Skips the usage of the application's default package if the name
+                of the class is not fully qualified.
+        --state
+                Specifies the GameState template to be used.
+                (defaults to GameState)
+        --with-controller
+                Fully qualified className Controller to use.
+                WARNING: the command will not create a file for this member.
+        --with-model
+                Fully qualified className Model to use.
+                WARNING: the command will not create a file for this member.
+
+

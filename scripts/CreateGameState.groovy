@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011 Griffon Slick - Andres Almiray. All Rights Reserved.
+ * Copyright (c) 2010-2012 Griffon Slick - Andres Almiray. All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,14 +28,12 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import griffon.util.GriffonNameUtils
 import griffon.util.GriffonUtil
 
-includeTargets << griffonScript("Init")
 includeTargets << griffonScript("CreateIntegrationTest")
 
 target(createGameState: "Creates a new Game State") {
-    depends(checkVersion, parseArguments)
-
     if (isPluginProject && !isAddonPlugin) {
         println """You must create an Addon descriptor first.
 Type in griffon create-addon then execute this command again."""
@@ -44,53 +42,119 @@ Type in griffon create-addon then execute this command again."""
 
     promptForName(type: "Game State")
     def (pkg, name) = extractArtifactName(argsMap['params'][0])
-    def fqn = "${pkg ? pkg : ''}${pkg ? '.' : ''}${GRiffonUtil.getClassNameRepresentation(name)}"
 
+    mvcPackageName = pkg ? pkg : ''
+    mvcClassName = GriffonUtil.getClassNameRepresentation(name)
+    mvcFullQualifiedClassName = "${pkg ? pkg : ''}${pkg ? '.' : ''}$mvcClassName"
+
+    // -- compatibility
+    argsMap['with-model']      = argsMap['with-model']      ?: argsMap.withModel
+    argsMap['with-controller'] = argsMap['with-controller'] ?: argsMap.withController
+    argsMap['skip-model']      = argsMap['skip-model']      ?: argsMap.skipModel
+    argsMap['skip-controller'] = argsMap['skip-controller'] ?: argsMap.skipController
+    // -- compatibility
+
+    String modelTemplate      = 'Model'
+    String stateTemplate      = 'GameState'
+    String controllerTemplate = 'Controller'
+    if (argsMap.group) {
+        modelTemplate      = argsMap.group + modelTemplate
+        stateTemplate      = argsMap.group + stateTemplate
+        controllerTemplate = argsMap.group + controllerTemplate
+    }
+
+    String modelClassName = ''
+    if (!argsMap['skip-model'] && !argsMap['with-model']) {
+        createArtifact(
+                name:     mvcFullQualifiedClassName,
+                suffix:   'Model',
+                type:     'Model',
+                template: modelTemplate,
+                path:     'griffon-app/models')
+        modelClassName = fullyQualifiedClassName
+    }
+
+    String stateClassName = ''
     createArtifact(
-            name: fqn,
-            suffix: "Model",
-            type: "Model",
-            path: "griffon-app/models")
+            name:     mvcFullQualifiedClassName,
+            suffix:   'GameState',
+            type:     'GameState',
+            template: stateTemplate,
+            path:     'griffon-app/gamestates')
+    stateClassName = fullyQualifiedClassName
 
-    createArtifact(
-            name: fqn,
-            suffix: "GameState",
-            type: "GameState",
-            path: "griffon-app/gamestates")
+    String controllerClassName = ''
+    if (!argsMap['skip-controller'] && !argsMap['with-controller']) {
+        createArtifact(
+                name:     mvcFullQualifiedClassName,
+                suffix:   'Controller',
+                type:     'Controller',
+                template: controllerTemplate,
+                path:     'griffon-app/controllers')
+        controllerClassName = fullyQualifiedClassName
 
-    createArtifact(
-            name: fqn,
-            suffix: "Controller",
-            type: "Controller",
-            path: "griffon-app/controllers")
+        doCreateIntegrationTest(
+                name:   mvcFullQualifiedClassName,
+                suffix: '')
+    }
 
-    name = GriffonUtil.uncapitalize(name)
+    name = GriffonNameUtils.getPropertyName(name)
 
     if (isAddonPlugin) {
         // create mvcGroup in a plugin
+        def isJava = isAddonPlugin.absolutePath.endsWith('.java')
         def addonFile = isAddonPlugin
         def addonText = addonFile.text
 
-        if (!(addonText =~ /\s*def\s*mvcGroups\s*=\s*\[/)) {
-            addonText = addonText.replaceAll(/\}\s*\z/, """
+        if (isJava) {
+            if (!(addonText =~ /\s*public Map<String, Map<String, String>>\s*getMvcGroups\(\)\s*\{/)) {
+                addonText = addonText.replaceAll(/\}\s*\z/, """
+                public Map<String, Map<String, Object>> getMvcGroups() {
+                    Map<String, Map<String, Object>> groups = new LinkedHashMap<String, Map<String, Object>>();
+                    return groups;
+                }
+            }
+            """)
+            }
+
+            List parts = []
+            if (!argsMap['skip-model'])      parts << """            {"model",      "${(argsMap['with-model'] ?: modelClassName)}"}"""
+                                             parts << """            {"state",       "$stateClassName"}"""
+            if (!argsMap['skip-controller']) parts << """            {"controller", "${(argsMap['with-controller'] ?: controllerClassName)}"}"""
+
+            addonFile.withWriter {
+                it.write addonText.replaceAll(/\s*Map<String, Map<String, String>> groups = new LinkedHashMap<String, Map<String, String>>\(\);/, """
+                    Map<String, Map<String, Object>> groups = new LinkedHashMap<String, Map<String, Object>>();
+                    // MVC Group for "$name"
+                    groups.put("$name", groupDef(new String[][]{
+            ${parts.join(',\n')}
+                    }));""")
+            }
+
+        } else {
+
+            if (!(addonText =~ /\s*def\s*mvcGroups\s*=\s*\[/)) {
+                addonText = addonText.replaceAll(/\}\s*\z/, """
     def mvcGroups = [
     ]
 }
 """)
-        }
-        addonFile.withWriter {
-            it.write addonText.replaceAll(/\s*def\s*mvcGroups\s*=\s*\[/, """
+            }
+            List parts = []
+            if (!argsMap['skip-model'])      parts << "            model     : '${(argsMap['with-model'] ?: modelClassName)}'"
+                                             parts << "            state      : '$stateClassName'"
+            if (!argsMap['skip-controller']) parts << "            controller: '${(argsMap['with-controller'] ?: controllerClassName)}'"
+
+            addonFile.withWriter {
+                it.write addonText.replaceAll(/\s*def\s*mvcGroups\s*=\s*\[/, """
     def mvcGroups = [
-        // Game State for "$args"
-        '$name' : [
-            model:      '${fqn}Model',
-            state:      '${fqn}GameState',
-            controller: '${fqn}Controller'
-        ]
+        // MVC Group for "$name"
+        '$name': [
+${parts.join(',\n')}
+        ],
     """)
+            }
         }
-
-
     } else {
         // create mvcGroup in an application
         def applicationConfigFile = new File("${basedir}/griffon-app/conf/Application.groovy")
@@ -101,14 +165,18 @@ mvcGroups {
 }
 """
         }
+
+        List parts = []
+        if (!argsMap['skip-model'])      parts << "        model      = '${(argsMap['with-model'] ?: modelClassName)}'"
+                                         parts << "        state       = '$stateClassName'"
+        if (!argsMap['skip-controller']) parts << "        controller = '${(argsMap['with-controller'] ?: controllerClassName)}'"
+
         applicationConfigFile.withWriter {
             it.write configText.replaceAll(/\s*mvcGroups\s*\{/, """
 mvcGroups {
-    // Game State for "$name"
+    // MVC Group for "$name"
     '$name' {
-        model      = '${fqn}Model'
-        state      = '${fqn}GameState'
-        controller = '${fqn}Controller'
+${parts.join('\n')}
     }
 """)
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2011 Griffon Slick - Andres Almiray. All Rights Reserved.
+ * Copyright (c) 2010-2012 Griffon Slick - Andres Almiray. All Rights Reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -32,34 +32,20 @@
  * @author Andres Almiray
  */
 
-def eventClosure1 = binding.variables.containsKey('eventSetClasspath') ? eventSetClasspath : {cl->}
-eventSetClasspath = { cl ->
-    eventClosure1(cl)
-    if(compilingPlugin('slick')) return
-    griffonSettings.dependencyManager.flatDirResolver name: 'griffon-slick-plugin', dirs: "${slickPluginDir}/addon"
-    griffonSettings.dependencyManager.addPluginDependency('slick', [
-        conf: 'compile',
-        name: 'griffon-slick-addon',
-        group: 'org.codehaus.griffon.plugins',
-        version: slickPluginVersion
-    ])
-}
-
 eventCollectArtifacts = { artifactsInfo ->
-    if(!artifactsInfo.find{ it.type == 'gamestate' }) {
+    if (!artifactsInfo.find{ it.type == 'gamestate' }) {
         artifactsInfo << [type: 'gamestate', path: 'gamestates', suffix: 'GameState']
     }
 }
 
 eventStatsStart = { pathToInfo ->
-    if(!pathToInfo.find{ it.path == 'gamestates'} ) {
+    if (!pathToInfo.find{ it.path == 'gamestates'} ) {
         pathToInfo << [name: 'Slick Game States', path: 'gamestates', filetype: ['.groovy', '.java']]
     }
 }
 
 eventCreateConfigEnd = {
-    if(compilingPlugin('slick')) return
-    if(buildConfig.griffon.application.mainClass) return
+    if (compilingPlugin('slick')) return
 
     File slickStates = new File("${basedir}/griffon-app/gamestates")
     boolean hasStates = false
