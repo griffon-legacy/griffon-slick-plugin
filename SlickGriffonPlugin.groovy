@@ -277,7 +277,8 @@ The following keys are enabled
  * **Z** - increases the zoom level of the plane sprite.
  * **O** - increases the zoom level of the plane sprite.
 
-Be careful when moving the plane forward; this game is so simple it does not perform collision detection, chances are that when the plane leaves the viewport you won't see it again unless you manage to rotate it to the correct angle.
+Be careful when moving the plane forward; this game is so simple it does not perform collision detection, chances are that when the
+plane leaves the viewport you won't see it again unless you manage to rotate it to the correct angle.
 
 
 [1]: http://slick.cokeandcode.com/
